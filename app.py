@@ -5,7 +5,7 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import IsolationForest
 import pickle
-
+import re
 # Define a function to run anomaly detection
 def run_anomaly_detection(df):
     df1 = df.rename(columns={"Amount":"scaled_amount","Time":"scaled_time"})
@@ -29,18 +29,22 @@ def main():
     st.write("Upload a CSV file with credit card transactions.")
 
     # File uploader
-    uploaded_file = st.file_uploader("Choose a CSV file", type="xlsx")
+    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     
     if uploaded_file is not None:
         # Read the CSV file
-        df = pd.read_excel(uploaded_file, sheet_name='creditcard_test')
+        # df = pd.read_excel(uploaded_file, sheet_name='creditcard_test')
+        df = pd.read_csv(uploaded_file)
+        strs=[]
+        for c in df.columns:
+            for i in df[c]:
+                if type(i)==str:
+                    if re.search('[a-zA-Z]', i):
+                        strs.append(i)
         inds=[]
         for c in df.columns:
-            s=set()
-            for i in df[c].unique():
-                s.add(type(i))
-            if len(s)>1:
-                inds.extend(df[df[c].apply(lambda x: isinstance(x, str))].index)
+            for s in strs:
+                inds.extend(list( df[(df[c]==s)].index))  
         df.drop(inds,axis=0,inplace=True)
         df = run_anomaly_detection(df)
         # Display the results
