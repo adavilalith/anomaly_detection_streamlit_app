@@ -5,7 +5,30 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import IsolationForest
 import pickle
 import re
+import numpy as np
+import tensorflow as tf
+
 # Define a function to run anomaly detection
+def run_anomaly_detection1(df):
+    df2 = df.drop(['Time'], axis=1)
+    df2 = df2.astype(np.float64)
+    
+
+
+    mean = df2.mean(axis=0)
+    std = df2.std(axis=0)
+    df2 = (df2 - mean) / std
+
+    df2 = df2.to_numpy()
+
+    model = tf.keras.models.load_model('./autoencoder_model.keras')
+    y_pred = model.predict(df2)
+    mse = np.mean(np.power(df2 - y_pred, 2), axis=1)
+    
+    y_pred = [1 if e>24 else 0 for e in mse]
+
+    df['anomaly'] = y_pred
+    return df
 def run_anomaly_detection(df):
     df1 = df.rename(columns={"Amount":"scaled_amount","Time":"scaled_time"})
 
@@ -46,4 +69,4 @@ for c in df.columns:
     for s in strs:
         inds.extend(list( df[(df[c]==s)].index))  
 df.drop(inds,axis=0,inplace=True)
-df = run_anomaly_detection(df)
+df = run_anomaly_detection1(df)
